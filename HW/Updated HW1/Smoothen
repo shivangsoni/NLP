@@ -1,0 +1,77 @@
+  def __init__(self, corpus):
+    """Initialize your data structures in the constructor."""
+    self.unigramCounts = collections.defaultdict(lambda: 0)
+    self.trigramCounts = collections.defaultdict(lambda: 0)
+    self.fourthCounts = collections.defaultdict(lambda: 0)
+    self.bigramCounts = collections.defaultdict(lambda: 0)
+    self.total = 0
+    self.train(corpus)
+    
+  
+  def train(self, corpus):
+    """ Takes a corpus and trains your language model. 
+        Compute any counts or other corpus statistics in this function.
+    """ 
+    prevFirstWord = None
+    prevSecWord = None
+    prevThirdWord = None 
+    for sentence in corpus.corpus:
+      for datum in sentence.data:
+        token = datum.word
+        self.unigramCounts[token] += 1
+        if (prevFirstWord != None):
+           bigram = (prevFirstWord,token)
+           self.bigramCounts[bigram] += 1
+        if (prevSecWord != None):
+           trigram = (prevSecWord,prevFirstWord,token)
+           self.trigramCounts[trigram] += 1
+        if (prevThirdWord != None):
+           fourgram = (prevThirdWord,prevSecWord,prevFirstWord,token)
+           self.fourthCounts[fourgram] += 1
+        prevThirdWord = prevSecWord
+        prevSecWord = prevFirstWord
+        prevFirstWord = token
+    self.total = sum(self.unigramCounts.values())  
+        
+        
+  def score(self, sentence):
+    """ Takes a list of strings as argument and returns the log-probability of the 
+        sentence using your language model. Use whatever data you computed in train() here.
+    """
+    score = 0.0
+    prevFirstWord = None
+    prevSecWord = None
+    prevThirdWord = None 
+        
+    for token in sentence:
+      fourgram = (prevThirdWord,prevSecWord,prevFirstWord,token)
+      fourgramcount = self.fourthCounts[fourgram]
+      trigram = (prevThirdWord,prevSecWord,prevFirstWord)
+      threegramcount =  self.trigramCounts[trigram]
+      bigram = (prevSecWord,prevFirstWord)
+      bigramcount = self.bigramCounts[bigram]
+      if (fourgramcount > 0):
+         score += math.log(fourgramcount)
+         score -= math.log(threegramcount)
+      else:
+         trigram = (prevSecWord,prevFirstWord,token)
+         threegramcount =  self.trigramCounts[trigram]
+         if (threegramcount > 0):
+            score += math.log(threegramcount)
+            score -= math.log(bigramcount)
+            score += math.log(0.9)
+         else:
+            bigram = (prevFirstWord,token)
+            bigramcount = self.bigramCounts[bigram]
+            if (bigramcount > 0):
+               score += math.log(bigramcount)
+               score -= math.log(self.unigramCounts[prevFirstWord])
+               score += 2*math.log(0.9)  
+            else:
+               score += 3 * math.log(0.9)
+               score += math.log(self.unigramCounts[tuple([token])] + 1.0)
+               score -= math.log(self.total + len(self.unigramCounts))
+      prevThirdWord = prevSecWord
+      prevSecWord = prevFirstWord
+      prevFirstWord = token 
+    return score

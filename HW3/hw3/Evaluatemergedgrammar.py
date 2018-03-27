@@ -1,0 +1,35 @@
+import math
+
+summation = 0
+
+summation = summation + math.log(9.427e-06)
+summation = summation + math.log(1.539e-10)
+summation = summation + math.log(2.301e-20)
+summation = summation + math.log(2.476e-15)
+summation = summation + math.log(8.842e-17)
+summation = summation + math.log(5.388e-23)
+summation = summation + math.log(2.087e-22)
+summation = summation + math.log(2.103e-26)
+summation = summation + math.log(1.565e-22)
+summation = summation + math.log(4.421e-17)
+summation = summation + math.log(4.028e-21)
+summation = summation + math.log(9.398e-21 )
+summation = summation + math.log(3.081e-22)
+summation = summation + math.log(4.909e-27)
+summation = summation + math.log(3.380e-26 )
+summation = summation + math.log(7.605e-26)
+summation = summation + math.log(7.300e-31)
+summation = summation + math.log(2.241e-33)
+summation = summation + math.log(2.476e-15)
+summation = summation + math.log(2.146e-28)
+summation = summation + math.log(3.463e-29)
+summation = summation + math.log(4.262e-23)
+summation = summation + math.log(7.895e-19)
+summation = summation + math.log(1.298e-30)
+summation = summation + math.log(1.515e-22)
+summation = summation + math.log(1.217e-30)
+summation = summation + math.log(1.733e-21)
+
+answer = pow(2,-summation/27)
+
+print(answer)

@@ -1,0 +1,271 @@
+
+  def correctSentence(self, sentence):
+    
+    """Takes a list of words, returns a corrected list of words."""
+    print ("This is error sentence",sentence)
+    if len(sentence) == 0:
+      return []
+    argmax_i = 0
+    argmax_w = sentence[0]
+    maxscore = float('-inf')
+    maxlm = float('-inf')
+    maxedit = float('-inf')
+    
+    # skip start and end tokens
+    for i in range(1, len(sentence) - 1):
+      word = sentence[i]
+      editProbs = self.editModel.editProbabilities(word)
+      for alternative, editscore in editProbs.iteritems():
+        if alternative == word:
+          continue
+        sentence[i] = alternative
+        lmscore = self.languageModel.score(sentence)
+        if editscore != 0:
+          editscore = math.log(editscore)
+        else:
+          editscore = float('-inf')
+        score = lmscore + editscore
+        if score >= maxscore:
+          maxscore = score
+          maxlm = lmscore
+          maxedit = editscore
+          argmax_i = i
+          argmax_w = alternative
+
+      sentence[i] = word # restores sentence to original state before moving on
+    argmax = list(sentence) # copy it
+    argmax[argmax_i] = argmax_w # correct it
+    print ("This is correct sentence",argmax)
+    return argmax
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+MyCode
+  def correctSentence(self, sentence):
+    """Assuming exactly one error per sentence, returns the most probable corrected sentence.
+       Sentence is a list of words."""
+    print ("This is error sentence",sentence)
+    if len(sentence) == 0:
+      return []
+
+    bestSentence = sentence #copy of sentence
+    bestScore = float('-inf')
+    bestIndex = 0
+    for i in xrange(1, len(sentence) - 1): #ignore <s> and </s>
+      keeptrack = sentence[i]
+      Prob = self.editModel.editProbabilities(sentence[i])
+      for word, loggedWordProb in Prob:
+         if(word == sentence[i]):  
+            continue
+         sentence[i] = word
+         langProbablity = self.languageModel.score(sentence)
+         netprob = langProbablity + loggedWordProb
+         if(netprob >= bestScore):
+            bestScore = netprob
+            bestIndex = i
+      bestSentence[bestIndex] = sentence[i]      
+      sentence[i] = keeptrack
+    print ("This is correct sentence",bestSentence)
+    return bestSentence
+
+
+
+///////////////////////////////////////////////////
+
+    def correctSentence(self, sentence):
+    
+    """Takes a list of words, returns a corrected list of words."""
+    #print ("This is error sentence",sentence)
+    if len(sentence) == 0:
+      return []
+    argmax_i = 0
+    argmax_w = sentence[0]
+    maxscore = float('-inf')    
+    # skip start and end tokens
+    for i in range(1, len(sentence) - 1):
+      word = sentence[i]
+      editProbs = self.editModel.editProbabilities(word)
+      for alternative, editscore in editProbs:
+        if alternative == word:
+          continue
+        sentence[i] = alternative
+        lmscore = self.languageModel.score(sentence)
+        score = lmscore + editscore
+        if score >= maxscore:
+          maxscore = score
+          argmax_i = i
+          argmax_w = alternative
+        sentence[i] = word # restores sentence to original state before moving on
+    argmax = list(sentence) # copy it
+    argmax[argmax_i] = argmax_w # correct it
+    #print ("This is correct sentence",argmax)
+    return argmax
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+  def correctSentence(self, sentence):
+    #print("This is errored sentence",sentence)
+    """Takes a list of words, returns a corrected list of words."""
+    if(len(sentence) == 0):
+      return []
+    bestSentence = sentence
+    bestScore = float('-inf')
+    bestIndex = 0
+    bestWordValue = "a"
+    for i in (1 , len(sentence) - 1):  #First word <s> and last is </s> 
+       keeptrack = sentence[i]
+       for word , Prob in self.editModel.editProbabilities(keeptrack):
+           if word == keeptrack :
+              continue
+           sentence[i] = word #Replace the word by edited word
+           score = self.languageModel.score(sentence)
+           netscore = score + Prob
+           if (netscore >= bestScore):
+              bestScore = netscore
+              bestWordValue = word
+              bestIndex = i
+       sentence[i] = keeptrack #replace the word.
+    bestSentence[bestIndex] = bestWordValue
+    #print("This is correct sentence",bestSentence)
+    return bestSentence
+
+
+
+
+//////////////////////////////////////////////////////////
+Custom language Model
+///////////////////////////////////////////////////////////
+import math
+from collections import Counter
+from collections import defaultdict
+
+class CustomLanguageModel:
+
+  def __init__(self, corpus):
+    """Initialize your data structures in the constructor."""
+    self.unigram_count = Counter()
+    self.bigram_count = Counter()
+    self.trigram_count = Counter()
+    self.vocabulary_size = 0
+    self.num_words = 0
+    self.backoff_multiplier = 0.4
+    self.train(corpus)
+
+  def train(self, corpus):
+    """ Takes a corpus and trains your language model. 
+        Compute any counts or other corpus statistics in this function.
+    """  
+    for sentence in corpus.corpus:
+      prev_word1 = None
+      prev_word2 = None
+      for datum in sentence.data:
+        word = datum.word
+        self.unigram_count[tuple([word])] += 1
+        if prev_word1 != None:
+          self.bigram_count[tuple([prev_word1,word])] += 1
+        if prev_word2 != None:
+          self.trigram_count[tuple([prev_word2,prev_word1,word])] += 1
+        prev_word2 = prev_word1
+        prev_word1 = word
+      
+    self.vocabulary_size = len(self.unigram_count)
+    self.num_words = sum(self.unigram_count.values())
+
+  def score(self, sentence):
+    """ Takes a list of strings as argument and returns the log-probability of the 
+        sentence using your language model. Use whatever data you computed in train() here.
+    """
+    score = 0.0
+    prev_word1 = None
+    prev_word2 = None
+    for word in sentence:
+      three_words_count = self.trigram_count[tuple([prev_word2, prev_word1, word])]
+      two_words_count = self.bigram_count[tuple([prev_word2, prev_word1])]
+      # Use the trigram if it exists
+      if (three_words_count > 0):
+        score += math.log(three_words_count)
+        score -= math.log(two_words_count)
+      else:
+        two_words_count = self.bigram_count[tuple([prev_word1, word])]
+        one_word_count = self.unigram_count[tuple([prev_word1])]
+        # Use the bigram if it exists
+        if (two_words_count > 0):
+          score += math.log(self.backoff_multiplier)
+          score += math.log(two_words_count)
+          score -= math.log(one_word_count)
+        # Use the unigram in case all else fails
+        else:
+          score += 2 * math.log(self.backoff_multiplier)
+          score += math.log(self.unigram_count[tuple([word])] + 1.0)
+          score -= math.log(self.num_words + self.vocabulary_size)
+      prev_word2 = prev_word1
+      prev_word1 = word
+    return score
+///////////////////////////////////////////////////////////////////
+Custom Model my Code
+//////////////////////////////////////////////////////////////////
+import math, collections
+class CustomModel:
+
+  def __init__(self, corpus):
+    """Initial custom language model and structures needed by this mode"""
+    self.unigramCounts = collections.defaultdict(lambda: 0)
+    self.bigramCounts = collections.defaultdict(lambda:0)
+    self.total = 0
+    self.train(corpus)
+
+  def train(self, corpus):
+    """ Takes a corpus and trains your language model.
+    """  
+    previous = "<s>"
+    for sentence in corpus.corpus:
+      for datum in sentence.data:  
+        token = datum.word
+        bigram = (previous,token)
+        self.unigramCounts[token] = self.unigramCounts[token] + 1
+        self.bigramCounts[bigram] +=1
+        self.total += 1
+        previous = token
+
+  def score(self, sentence):
+    """ With list of strings, return the log-probability of the sentence with language model. Use
+        information generated from train.
+    """
+    score = 0
+    previous ="<s>"
+    d = 0.75
+    
+    for token in sentence:
+      # P(w_i|w_i-1) = (c*(w_i-1,w_i)-d)/(c(w_i-1)) + (d/(c(w_i-1)))*(w:c(w_i-1,w)>0)*P_continuation(w)
+      # P_continuation(w) = c(w_i-1,w)/c(w_j-1,w_j)
+      bigram = (previous,token)
+      count = self.bigramCounts[token]
+      cc_0 = 100
+      #for big in self.bigramCounts.keys():
+         #if(big[1] == token):
+           #cc_0 += 1
+      if count > 0:
+         score += math.log((count-d)/self.unigramCounts[previous] + (d/(self.unigramCounts[previous])*count))*(cc_0/(len(self.bigramCounts)))
+      else:
+                count_unigram = self.unigramCounts[token]
+                score += math.log(count_unigram + 1)
+                score -= math.log(self.total + len(self.unigramCounts))
+                score += math.log(0.4)       
+      previous = token
+    return score
